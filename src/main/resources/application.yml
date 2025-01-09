@@ -1,0 +1,21 @@
+spring:
+  application:
+    trading
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  #      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    url: jdbc:postgresql://ep-round-mode-a8zv5j4e.eastus2.azure.neon.tech:5432/cexchangedb?sslmode=require
+    username: neondb_owner
+    password: EbFDmu0oVqd3
+    driver-class-name: org.postgresql.Driver
+server:
+  port: 5455
