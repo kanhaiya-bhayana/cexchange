@@ -2,6 +2,7 @@ package com.cexchange.Services;
 
 import com.cexchange.Config.Jwt.JwtProvider;
 import com.cexchange.Domain.Entities.User;
+import com.cexchange.Dtos.AuthResponse;
 import com.cexchange.Dtos.UserDto;
 import com.cexchange.Dtos.UserResponse;
 import com.cexchange.Exceptions.UserAlreadyExistsException;
@@ -26,7 +27,8 @@ public class UserService implements IUserService{
     private final IUserRepository _userRepository;
     @Override
     public UserResponse CreateUser(UserDto userDto) {
-        User isEmailExist = _userRepository.findByEmail(userDto.getEmail())
+        User isEmailExist = _userRepository.findByEmail(userDto.getEmail());
+        if (isEmailExist != null)
                 throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
 
         User user = UserMapper.mapToUser(userDto);
@@ -43,8 +45,16 @@ public class UserService implements IUserService{
 
         String jwt = JwtProvider.generateToken(auth);
 
+        UserResponse response = UserResponse.builder()
+                .id(user.getId())
+                .AuthResponse(AuthResponse.builder()
+                        .jwt(jwt)
+                        .status(true)
+                        .message("register successfully")
+                        .build())
+                .build();
 
-        return new UserResponse(user.getId());
+        return response;
     }
 
     @Override

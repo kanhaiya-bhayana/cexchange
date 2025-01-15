@@ -1,5 +1,6 @@
 package com.cexchange.Controllers;
 
+import com.cexchange.Dtos.AuthResponse;
 import com.cexchange.Dtos.UserDto;
 import com.cexchange.Dtos.UserResponse;
 import com.cexchange.Exceptions.UserAlreadyExistsException;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
@@ -23,15 +24,21 @@ public class AuthController {
     private final IUserService userService;
     @PostMapping("/signup")
     public ResponseEntity<UserResponse> createUser(@RequestBody UserDto request) {
-        try {
-            UUID response = userService.CreateUser(request);
-            return new ResponseEntity<>(new UserResponse(response), HttpStatus.CREATED);
+            try {
+            UserResponse response = userService.CreateUser(request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (UserAlreadyExistsException ex) {
             log.error("Error while creating user: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(UserResponse.builder()
+                    .error(true)
+                    .errorMessage(ex.getMessage())
+                    .build(), HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception ex) {
             log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(UserResponse.builder()
+                    .error(true)
+                    .errorMessage(ex.getMessage())
+                    .build(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
