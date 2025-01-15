@@ -11,9 +11,9 @@ import java.util.UUID;
 @Data
 @SuperBuilder
 public class UserResponse {
-    public UUID id;
-    public boolean error;
-    public String errorMessage;
+    private UUID id;
+    private boolean error;
+    private String errorMessage;
     @Embedded
     private AuthResponse AuthResponse;
 }
