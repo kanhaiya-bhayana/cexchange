@@ -24,15 +24,19 @@ public class AuthService implements IAuthService{
     private final PasswordEncoder _passwordEncoder;
     private final IUserRepository _userRepository;
     private final AuthenticationManager _authManager;
+    private final IOTPService _otpService;
     @Override
     public UserResponse CreateUser(UserDto userDto) {
         User isEmailExist = _userRepository.findByEmail(userDto.getEmail());
-        if (isEmailExist != null)
-            throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
+//        if (isEmailExist != null)
+//            throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
         userDto.setPassword(_passwordEncoder.encode(userDto.getPassword()));
         User user = UserMapper.mapToUser(userDto);
         if (user == null)
             throw new RuntimeException("cannot create user at the moment");
+
+        String otp = _otpService.generateOTP(userDto.getFullName());
+        boolean isValid = _otpService.validateOTP(user.getFullName(), otp);
 
         _userRepository.save(user);
 
@@ -50,7 +54,7 @@ public class AuthService implements IAuthService{
                 .AuthResponse(AuthResponse.builder()
                         .jwt(jwt)
                         .status(true)
-                        .message("register successfully")
+                        .message("register successfully -> " + otp)
                         .build())
                 .build();
 
