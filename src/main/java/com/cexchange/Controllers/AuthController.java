@@ -12,6 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -58,5 +61,12 @@ public class AuthController {
                     .errorMessage(ex.getMessage())
                     .build(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/signin/verify{opt}")
+    public ResponseEntity<?> verifySignin(
+            @PathVariable String otp,
+            @RequestParam String email){
+
     }
 }

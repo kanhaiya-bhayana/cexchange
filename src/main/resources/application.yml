@@ -22,3 +22,8 @@ server:
 
 otp:
   secret: your-very-long-secure-secret-key-here
+
+emailSettings:
+  subject: Verify-OTP
+  from: devuser.cloud@gmail.com
+  password:

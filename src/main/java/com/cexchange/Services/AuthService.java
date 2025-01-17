@@ -9,6 +9,7 @@ import com.cexchange.Dtos.UserResponse;
 import com.cexchange.Exceptions.UserAlreadyExistsException;
 import com.cexchange.Mapper.UserMapper;
 import com.cexchange.Repository.IUserRepository;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +19,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService implements IAuthService{
@@ -25,18 +28,16 @@ public class AuthService implements IAuthService{
     private final IUserRepository _userRepository;
     private final AuthenticationManager _authManager;
     private final IOTPService _otpService;
+    private final IEmailService _emailService;
     @Override
     public UserResponse CreateUser(UserDto userDto) {
         User isEmailExist = _userRepository.findByEmail(userDto.getEmail());
-//        if (isEmailExist != null)
-//            throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
+        if (isEmailExist != null)
+            throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
         userDto.setPassword(_passwordEncoder.encode(userDto.getPassword()));
         User user = UserMapper.mapToUser(userDto);
         if (user == null)
             throw new RuntimeException("cannot create user at the moment");
-
-        String otp = _otpService.generateOTP(userDto.getFullName());
-        boolean isValid = _otpService.validateOTP(user.getFullName(), otp);
 
         _userRepository.save(user);
 
@@ -54,7 +55,7 @@ public class AuthService implements IAuthService{
                 .AuthResponse(AuthResponse.builder()
                         .jwt(jwt)
                         .status(true)
-                        .message("register successfully -> " + otp)
+                        .message("register successfully")
                         .build())
                 .build();
 
@@ -62,7 +63,7 @@ public class AuthService implements IAuthService{
     }
 
     @Override
-    public UserResponse LoginUser(LoginDto request) {
+    public UserResponse LoginUser(LoginDto request) throws MessagingException {
         User isExist = _userRepository.findByEmail(request.getEmail());
         if (isExist == null)
             throw new UsernameNotFoundException("Account not found, bad credentials.");
@@ -73,6 +74,12 @@ public class AuthService implements IAuthService{
                         request.getPassword()
                 )
         );
+
+        String verificationOtp = _otpService.generateOTP(request.getEmail());
+
+        boolean isEmailSent = _emailService.SendEmail(request.getEmail(), verificationOtp);
+
+
 
         String jwt = JwtProvider.generateToken(auth);
 
@@ -88,5 +95,17 @@ public class AuthService implements IAuthService{
                 .build();
 
         return response;
+    }
+
+    @Override
+    public AuthResponse VerifySingin(String otp, String email) {
+//        if (_otpService.validateOTP(email, otp)){
+//            AuthResponse response = AuthResponse.builder()
+//                    .message("Two factor authentication verified")
+//                    .isTwoFactorAuthEnabled(true)
+//                    .jwt()
+//                    .
+//        }
+
     }
 }
