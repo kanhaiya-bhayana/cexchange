@@ -12,6 +12,6 @@ import java.util.UUID;
 
 public interface IAuthService {
     UserResponse CreateUser(UserDto user);
-    UserResponse LoginUser(LoginDto request) throws MessagingException;
+    AuthResponse LoginUser(LoginDto request) throws MessagingException;
     AuthResponse VerifySingin(String otp, String email);
 }

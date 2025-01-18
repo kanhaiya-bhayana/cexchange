@@ -15,7 +15,7 @@ import java.time.Instant;
 public class OTPService implements IOTPService {
 
     private static final int OTP_LENGTH = 6;
-    private static final int TIME_STEP = 60; // 5 minutes in seconds
+    private static final int TIME_STEP = 180; // 5 minutes in seconds
     private static final String HASH_ALGORITHM = "HmacSHA256";
     @Value("${otp.secret}")
     private String secretKey; // Should be stored securely in application.properties

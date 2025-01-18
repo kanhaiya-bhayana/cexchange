@@ -29,6 +29,7 @@ public class AuthService implements IAuthService{
     private final AuthenticationManager _authManager;
     private final IOTPService _otpService;
     private final IEmailService _emailService;
+    private String token;
     @Override
     public UserResponse CreateUser(UserDto userDto) {
         User isEmailExist = _userRepository.findByEmail(userDto.getEmail());
@@ -63,7 +64,7 @@ public class AuthService implements IAuthService{
     }
 
     @Override
-    public UserResponse LoginUser(LoginDto request) throws MessagingException {
+    public AuthResponse LoginUser(LoginDto request) throws MessagingException {
         User isExist = _userRepository.findByEmail(request.getEmail());
         if (isExist == null)
             throw new UsernameNotFoundException("Account not found, bad credentials.");
@@ -77,35 +78,37 @@ public class AuthService implements IAuthService{
 
         String verificationOtp = _otpService.generateOTP(request.getEmail());
 
-        boolean isEmailSent = _emailService.SendEmail(request.getEmail(), verificationOtp);
+//        boolean isEmailSent = _emailService.SendEmail(request.getEmail(), verificationOtp);
 
 
 
         String jwt = JwtProvider.generateToken(auth);
+        token = jwt;
 
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        UserResponse response = UserResponse.builder()
-                .id(isExist.getId())
-                .AuthResponse(AuthResponse.builder()
-                        .jwt(jwt)
-                        .status(true)
-                        .message("login successfully")
-                        .build())
+        AuthResponse response = AuthResponse.builder()
+                        .message("Verification OTP has been sent to your email. " + verificationOtp)
                 .build();
-
         return response;
     }
 
     @Override
     public AuthResponse VerifySingin(String otp, String email) {
-//        if (_otpService.validateOTP(email, otp)){
-//            AuthResponse response = AuthResponse.builder()
-//                    .message("Two factor authentication verified")
-//                    .isTwoFactorAuthEnabled(true)
-//                    .jwt()
-//                    .
-//        }
-
+        AuthResponse response;
+        if (_otpService.validateOTP(email, otp)){
+            response  = AuthResponse.builder()
+                    .message("Two factor authentication verified")
+                    .status(true)
+                    .isTwoFactorAuthEnabled(true)
+                    .jwt(token)
+                    .build();
+            return response;
+        }
+        token = null;
+        response = AuthResponse.builder()
+                .message("Invalid OTP, Verification failed")
+                .build();
+        return response;
     }
 }

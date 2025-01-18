@@ -1,5 +1,6 @@
 package com.cexchange.Controllers;
 
+import com.cexchange.Dtos.AuthResponse;
 import com.cexchange.Dtos.LoginDto;
 import com.cexchange.Dtos.UserDto;
 import com.cexchange.Dtos.UserResponse;
@@ -44,29 +45,35 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<UserResponse> login(@RequestBody LoginDto request) {
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginDto request) {
         try {
-            UserResponse response = _authService.LoginUser(request);
+            AuthResponse response = _authService.LoginUser(request);
             return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
         } catch (UsernameNotFoundException ex) {
             log.error("Account not found, bad credentials: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(UserResponse.builder()
-                    .error(true)
-                    .errorMessage(ex.getMessage())
+            return new ResponseEntity<>(AuthResponse.builder()
+                    .message(ex.getMessage())
                     .build(), HttpStatus.NOT_FOUND);
         } catch (Exception ex) {
             log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(UserResponse.builder()
-                    .error(true)
-                    .errorMessage(ex.getMessage())
+            return new ResponseEntity<>(AuthResponse.builder()
+                    .message(ex.getMessage())
                     .build(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @PostMapping("/signin/verify{opt}")
-    public ResponseEntity<?> verifySignin(
+    @PostMapping("/signin/verify/{otp}/{email}")
+    public ResponseEntity<AuthResponse> verifySignin(
             @PathVariable String otp,
-            @RequestParam String email){
-
+            @PathVariable String email){
+        try{
+            AuthResponse response = _authService.VerifySingin(otp, email);
+            return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+        }
+        catch (Exception ex){
+            return new ResponseEntity<>(AuthResponse.builder()
+                    .message(ex.getMessage())
+                    .build(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
