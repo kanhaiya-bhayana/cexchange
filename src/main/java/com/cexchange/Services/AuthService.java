@@ -14,11 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,10 +32,10 @@ public class AuthService implements IAuthService{
     private final AuthenticationManager _authManager;
     private final IOTPService _otpService;
     private final IEmailService _emailService;
-    private String token;
     @Override
     public UserResponse CreateUser(UserDto userDto) {
         User isEmailExist = _userRepository.findByEmail(userDto.getEmail());
+
         if (isEmailExist != null)
             throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
         userDto.setPassword(_passwordEncoder.encode(userDto.getPassword()));
@@ -69,7 +72,7 @@ public class AuthService implements IAuthService{
         if (isExist == null)
             throw new UsernameNotFoundException("Account not found, bad credentials.");
 
-        Authentication auth = _authManager.authenticate(
+        _authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
                         request.getPassword()
@@ -80,13 +83,6 @@ public class AuthService implements IAuthService{
 
 //        boolean isEmailSent = _emailService.SendEmail(request.getEmail(), verificationOtp);
 
-
-
-        String jwt = JwtProvider.generateToken(auth);
-        token = jwt;
-
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
         AuthResponse response = AuthResponse.builder()
                         .message("Verification OTP has been sent to your email. " + verificationOtp)
                 .build();
@@ -95,17 +91,27 @@ public class AuthService implements IAuthService{
 
     @Override
     public AuthResponse VerifySingin(String otp, String email) {
+        User user = _userRepository.findByEmail(email);
+        String auths = user.getRole().toString()+",";
+        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(auths);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                        user.getEmail(),
+                        null,
+                        authorities
+                );
+        String jwt = JwtProvider.generateToken(auth);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
         AuthResponse response;
         if (_otpService.validateOTP(email, otp)){
             response  = AuthResponse.builder()
                     .message("Two factor authentication verified")
                     .status(true)
                     .isTwoFactorAuthEnabled(true)
-                    .jwt(token)
+                    .jwt(jwt)
                     .build();
             return response;
         }
-        token = null;
         response = AuthResponse.builder()
                 .message("Invalid OTP, Verification failed")
                 .build();
