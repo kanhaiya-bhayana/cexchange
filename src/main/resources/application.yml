@@ -1,4 +1,15 @@
 spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: bkanhaiya.bhayana@gmail.com
+    password: ${DEVUSEREMAILPASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   application:
     name: trading
   jpa:
@@ -12,9 +23,9 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
       database-platform: org.hibernate.dialect.PostgreSQLDialect
   datasource:
-    url: jdbc:postgresql://ep-round-mode-a8zv5j4e.eastus2.azure.neon.tech:5432/cexchangedb?sslmode=require
-    username: neondb_owner
-    password: EbFDmu0oVqd3
+    url: jdbc:postgresql://ep-soft-recipe-a189x52v.ap-southeast-1.aws.neon.tech/test?sslmode=require
+    username: learning_postgres_owner
+    password: t8qELP1OjCFp
     driver-class-name: org.postgresql.Driver
 
 server:
@@ -23,7 +34,3 @@ server:
 otp:
   secret: your-very-long-secure-secret-key-here
 
-emailSettings:
-  subject: Verify-OTP
-  from: devuser.cloud@gmail.com
-  password:

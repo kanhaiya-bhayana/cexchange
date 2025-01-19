@@ -34,43 +34,42 @@ public class AuthService implements IAuthService{
     private final IEmailService _emailService;
     @Override
     public UserResponse CreateUser(UserDto userDto) {
-        User isEmailExist = _userRepository.findByEmail(userDto.getEmail());
+        if(_userRepository.findByEmail(userDto.getEmail()).isEmpty()){
+            userDto.setPassword(_passwordEncoder.encode(userDto.getPassword()));
+            User user = UserMapper.mapToUser(userDto);
+            if (user == null)
+                throw new RuntimeException("cannot create user at the moment");
 
-        if (isEmailExist != null)
-            throw new UserAlreadyExistsException("An account already exist with this email: " + userDto.getEmail());
-        userDto.setPassword(_passwordEncoder.encode(userDto.getPassword()));
-        User user = UserMapper.mapToUser(userDto);
-        if (user == null)
-            throw new RuntimeException("cannot create user at the moment");
+            _userRepository.save(user);
 
-        _userRepository.save(user);
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    user.getEmail(),
+                    user.getPassword()
+            );
 
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                user.getEmail(),
-                user.getPassword()
-        );
+            SecurityContextHolder.getContext().setAuthentication(auth);
 
-        SecurityContextHolder.getContext().setAuthentication(auth);
+            String jwt = JwtProvider.generateToken(auth);
 
-        String jwt = JwtProvider.generateToken(auth);
+            UserResponse response = UserResponse.builder()
+                    .id(user.getId())
+                    .AuthResponse(AuthResponse.builder()
+                            .jwt(jwt)
+                            .status(true)
+                            .message("register successfully")
+                            .build())
+                    .build();
 
-        UserResponse response = UserResponse.builder()
-                .id(user.getId())
-                .AuthResponse(AuthResponse.builder()
-                        .jwt(jwt)
-                        .status(true)
-                        .message("register successfully")
-                        .build())
-                .build();
+            return response;
+        }
 
-        return response;
+        return null;
     }
 
     @Override
     public AuthResponse LoginUser(LoginDto request) throws MessagingException {
-        User isExist = _userRepository.findByEmail(request.getEmail());
-        if (isExist == null)
-            throw new UsernameNotFoundException("Account not found, bad credentials.");
+        User isExist = _userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("Account not found, bad credentials."));
 
         _authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -81,7 +80,7 @@ public class AuthService implements IAuthService{
 
         String verificationOtp = _otpService.generateOTP(request.getEmail());
 
-//        boolean isEmailSent = _emailService.SendEmail(request.getEmail(), verificationOtp);
+        boolean isEmailSent = _emailService.SendEmail(request.getEmail(), verificationOtp);
 
         AuthResponse response = AuthResponse.builder()
                         .message("Verification OTP has been sent to your email. " + verificationOtp)
@@ -91,7 +90,9 @@ public class AuthService implements IAuthService{
 
     @Override
     public AuthResponse VerifySingin(String otp, String email) {
-        User user = _userRepository.findByEmail(email);
+        User user = _userRepository.findByEmail(email)
+                .orElseThrow(()-> new UsernameNotFoundException("Something went wrong with the email: " + email));
+
         String auths = user.getRole().toString()+",";
         List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(auths);
         Authentication auth = new UsernamePasswordAuthenticationToken(

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,9 +33,9 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = _userRepository.findByEmail(username);
-        if (user == null)
-            throw new UsernameNotFoundException(username);
+        User user = _userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException(username));
+
         List<GrantedAuthority> authorityList = new ArrayList<>();
 
         return new org.springframework.security.core.userdetails.User(

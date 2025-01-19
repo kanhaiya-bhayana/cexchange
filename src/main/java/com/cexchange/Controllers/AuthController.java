@@ -68,7 +68,12 @@ public class AuthController {
             @PathVariable String email){
         try{
             AuthResponse response = _authService.VerifySingin(otp, email);
-            return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+        catch (UsernameNotFoundException u){
+            return new ResponseEntity<>(AuthResponse.builder()
+                    .message(u.getMessage())
+                    .build(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
         catch (Exception ex){
             return new ResponseEntity<>(AuthResponse.builder()

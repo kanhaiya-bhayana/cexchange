@@ -2,18 +2,21 @@ package com.cexchange.Services;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-@Service
-public class EmailService implements IEmailService {
-    private  JavaMailSender _mailSender;
+import java.util.concurrent.CompletableFuture;
 
-    @Value("${emailSettings.subject}")
-    private String Subject;
+@Service
+@RequiredArgsConstructor
+public class EmailService implements IEmailService {
+    private  final JavaMailSender _mailSender;
+
+    private final String Subject = "Verification OTP";
 
 
     @Override
@@ -27,7 +30,7 @@ public class EmailService implements IEmailService {
         mimeMessageHelper.setTo(toEmail);
 
         try{
-            _mailSender.send(mimeMessage);
+            CompletableFuture.runAsync(() -> _mailSender.send(mimeMessage));
             return true;
         }
         catch (Exception ex){
